@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -201,6 +202,23 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 					out_data[key] = append(v, i.Hex())
 				} else {
 					out_data[key] = []string{i.Hex()}
+				}
+			case primitive.Binary:
+				// for uuid
+				u, e := uuid.FromBytes(i.Data)
+				if e != nil {
+					fmt.Print(e)
+					if v, ok := out_data[key].([]string); ok {
+						out_data[key] = append(v, "")
+					} else {
+						out_data[key] = []string{""}
+					}
+				} else {
+					if v, ok := out_data[key].([]string); ok {
+						out_data[key] = append(v, u.String())
+					} else {
+						out_data[key] = []string{u.String()}
+					}
 				}
 			// case primitive.M:
 			// 	i
