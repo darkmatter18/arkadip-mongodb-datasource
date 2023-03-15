@@ -28,10 +28,10 @@ export function QueryEditor({ query, onChange, onRunQuery }: Props) {
   return (
     <div className="gf-form">
       <InlineField label="Database" tooltip="Name of the Database">
-        <Input onChange={onDatabaseChange} value={database} width={8} type="string" />
+        <Input onChange={onDatabaseChange} value={database} width={16} type="string" />
       </InlineField>
       <InlineField label="Collection" tooltip="Name of the collection">
-        <Input onChange={onCollectionChange} value={collection} width={8} type="string" />
+        <Input onChange={onCollectionChange} value={collection} width={20} type="string" />
       </InlineField>
       <InlineField label="Time field" tooltip="The time field">
         <Input onChange={onTimeField} value={time_field || ''} />
