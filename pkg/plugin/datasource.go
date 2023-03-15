@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
+	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -114,8 +117,6 @@ type queryModel struct {
 }
 
 func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
-	var response backend.DataResponse
-
 	// Unmarshal the JSON into our queryModel.
 	var qm queryModel
 
@@ -144,23 +145,79 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 		panic(err)
 	}
 
-	defer mongo_data.Close(context.Background())
+	// defer mongo_data.Close(context.Background())
 
-	final := []string{}
+	out_data := make(map[string]interface{})
+	len := 0
 
-	// Iterate over the cursor and convert each document to JSON
-	for mongo_data.Next(context.Background()) {
-		var doc bson.Raw
-		if err := mongo_data.Decode(&doc); err != nil {
-			log.Fatal(err)
+	for mongo_data.Next(context.TODO()) {
+		var m bson.M
+		if err := mongo_data.Decode(&m); err != nil {
+			fmt.Printf("Error in JSON")
 		}
 
-		jsonData, err := json.Marshal(doc)
-		if err != nil {
-			log.Fatal(err)
-		}
+		for key, value := range m {
+			switch i := value.(type) {
+			case int:
+				if v, ok := out_data[key].([]int); ok {
+					out_data[key] = append(v, i)
+				} else {
+					// // Initial Padding
+					// // If there is no value in the beginning but other keys have values
+					// // then fill the current key value with a array of len and fill with 0
+					// if len > 0 {
+					// 	out_data[key] = make([]int, len)
+					// } else {
+					// 	out_data[key] = []int{i}
+					// }
+					out_data[key] = []int{i}
+				}
+			case float64:
+				if v, ok := out_data[key].([]float64); ok {
+					out_data[key] = append(v, i)
+				} else {
+					out_data[key] = []float64{i}
+				}
+			case bool:
+				if v, ok := out_data[key].([]bool); ok {
+					out_data[key] = append(v, i)
+				} else {
+					out_data[key] = []bool{i}
+				}
+			case string:
+				if v, ok := out_data[key].([]string); ok {
+					out_data[key] = append(v, i)
+				} else {
+					out_data[key] = []string{i}
+				}
+			case primitive.DateTime:
+				if v, ok := out_data[key].([]time.Time); ok {
+					out_data[key] = append(v, i.Time())
+				} else {
+					out_data[key] = []time.Time{i.Time()}
+				}
+			case primitive.ObjectID:
+				if v, ok := out_data[key].([]string); ok {
+					out_data[key] = append(v, i.Hex())
+				} else {
+					out_data[key] = []string{i.Hex()}
+				}
+			// case primitive.M:
+			// 	i
+			// case primitive.A:
+			// 	String.valueOf(i)
+			// case primitive.Binary:
+			// for uuid
 
-		final = append(final, string(jsonData))
+			case nil:
+				fmt.Printf(" x is nil") // type of i is type of x (interface{})
+			default:
+				fmt.Printf(" don't know the type ") // type of i is type of x (interface{})
+				// fmt.Println(i)
+				fmt.Println("%V %V %V", key, reflect.TypeOf(value), i)
+			}
+		}
+		len++
 	}
 
 	// create data frame response.
@@ -168,12 +225,15 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 	// https://grafana.com/docs/grafana/latest/developers/plugins/data-frames/
 	frame := data.NewFrame("response")
 
-	// add fields.
-	frame.Fields = append(frame.Fields,
-		data.NewField("data", nil, final),
-	)
+	for key, value := range out_data {
+		// add fields.
+		frame.Fields = append(frame.Fields,
+			data.NewField(key, nil, value),
+		)
+	}
 
 	// add the frames to the response.
+	var response backend.DataResponse
 	response.Frames = append(response.Frames, frame)
 
 	return response
