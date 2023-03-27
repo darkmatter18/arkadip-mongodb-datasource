@@ -24,24 +24,25 @@ func ExtractPartsOfMongoCommand(command string) ([]string, error) {
 	return matches[1:], nil
 }
 
-func MongoPipeline(str string) mongo.Pipeline {
+func MongoPipeline(str string) (mongo.Pipeline, error) {
 	var pipeline = []bson.D{}
+	var err error
 	str = strings.TrimSpace(str)
 	if strings.Index(str, "[") != 0 {
 		var doc bson.D
-		bson.UnmarshalExtJSON([]byte(str), false, &doc)
+		err = bson.UnmarshalExtJSON([]byte(str), false, &doc)
 		pipeline = append(pipeline, doc)
 	} else {
-		bson.UnmarshalExtJSON([]byte(str), false, &pipeline)
+		err = bson.UnmarshalExtJSON([]byte(str), false, &pipeline)
 	}
-	return pipeline
+	return pipeline, err
 }
 
-func MongoFind(str string) bson.D {
+func MongoFind(str string) (bson.D, error) {
 	var pipeline = bson.D{}
 	str = strings.TrimSpace(str)
-	bson.UnmarshalExtJSON([]byte(str), false, &pipeline)
-	return pipeline
+	err := bson.UnmarshalExtJSON([]byte(str), false, &pipeline)
+	return pipeline, err
 }
 
 func MongoQuery(client *mongo.Client, ctx context.Context, db string, collection string, operation string, query string) (*mongo.Cursor, error) {
@@ -49,9 +50,17 @@ func MongoQuery(client *mongo.Client, ctx context.Context, db string, collection
 
 	switch operation {
 	case "find":
-		return db_collection.Find(ctx, MongoFind(query))
+		pipeline, err := MongoFind(query)
+		if err != nil {
+			return nil, err
+		}
+		return db_collection.Find(ctx, pipeline)
 	case "aggregate":
-		return db_collection.Aggregate(ctx, MongoPipeline(query))
+		pipeline, err := MongoPipeline(query)
+		if err != nil {
+			return nil, err
+		}
+		return db_collection.Aggregate(ctx, pipeline)
 	default:
 		return nil, fmt.Errorf("following option %s in not available", operation)
 	}
