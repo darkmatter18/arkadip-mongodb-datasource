@@ -1,13 +1,17 @@
 import { DataQuery, DataSourceJsonData } from '@grafana/data';
 
+// export interface MyQuery extends DataQuery {
+//   database: string;
+//   collection: string;
+//   time_field: string
+// }
+
 export interface MyQuery extends DataQuery {
-  database: string;
-  collection: string;
-  time_field: string
+  q: string;
 }
 
+
 export const DEFAULT_QUERY: Partial<MyQuery> = {
-  database: 'admin'
 };
 
 /**
