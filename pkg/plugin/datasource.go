@@ -62,7 +62,7 @@ func NewDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt.In
 
 	// Testing of the DB
 	var result bson.M
-	if err := client.Database(test_db).RunCommand(context.TODO(), bson.D{{"ping", 1}}).Decode(&result); err != nil {
+	if err := client.Database(test_db).RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Decode(&result); err != nil {
 		return nil, err
 	}
 
@@ -112,9 +112,7 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 }
 
 type queryModel struct {
-	Database   string `json:"database"`
-	Collection string `json:"collection"`
-	TimeField  string `json:"time_field"`
+	Q string `json:"q"`
 }
 
 func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
@@ -126,24 +124,25 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
 	}
 
-	log.Print(qm.Database)
-	log.Print(qm.Collection)
+	log.Printf(qm.Q)
 
-	db_col := d.db.Database(qm.Database).Collection(qm.Collection)
-
-	filter := bson.D{
-		{
-			Key: "$and",
-			Value: bson.A{
-				bson.D{{Key: qm.TimeField, Value: bson.D{{Key: "$gte", Value: query.TimeRange.From}}}},
-				bson.D{{Key: qm.TimeField, Value: bson.D{{Key: "$lte", Value: query.TimeRange.To}}}},
-			},
-		},
+	if len(qm.Q) == 0 {
+		var response backend.DataResponse
+		return response
 	}
 
-	mongo_data, err := db_col.Find(context.TODO(), filter)
-	if err != nil {
-		panic(err)
+	cmd, parts_err := ExtractPartsOfMongoCommand(qm.Q)
+	if parts_err != nil {
+		var response backend.DataResponse
+		response.Error = parts_err
+		return response
+	}
+
+	mongo_data, query_err := MongoQuery(&d.db, context.TODO(), cmd[0], cmd[1], cmd[2], cmd[3])
+	if query_err != nil {
+		var response backend.DataResponse
+		response.Error = query_err
+		return response
 	}
 
 	// defer mongo_data.Close(context.Background())
@@ -267,7 +266,7 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 
 	// Testing of the DB
 	var result bson.M
-	if err := d.db.Database(d.test_db).RunCommand(context.TODO(), bson.D{{"ping", 1}}).Decode(&result); err != nil {
+	if err := d.db.Database(d.test_db).RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Decode(&result); err != nil {
 		status = backend.HealthStatusError
 		message = err.Error()
 
