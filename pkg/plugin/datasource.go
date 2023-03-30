@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"reflect"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -148,7 +146,7 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 	// defer mongo_data.Close(context.Background())
 
 	out_data := make(map[string]interface{})
-	len := 0
+	length := 0
 
 	for mongo_data.Next(context.TODO()) {
 		var m bson.M
@@ -157,84 +155,41 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 		}
 
 		for key, value := range m {
+			var data string = ""
+			// fmt.Println("%V %V", key, reflect.TypeOf(value))
 			switch i := value.(type) {
-			case int:
-				if v, ok := out_data[key].([]int); ok {
-					out_data[key] = append(v, i)
-				} else {
-					// // Initial Padding
-					// // If there is no value in the beginning but other keys have values
-					// // then fill the current key value with a array of len and fill with 0
-					// if len > 0 {
-					// 	out_data[key] = make([]int, len)
-					// } else {
-					// 	out_data[key] = []int{i}
-					// }
-					out_data[key] = []int{i}
-				}
-			case float64:
-				if v, ok := out_data[key].([]float64); ok {
-					out_data[key] = append(v, i)
-				} else {
-					out_data[key] = []float64{i}
-				}
-			case bool:
-				if v, ok := out_data[key].([]bool); ok {
-					out_data[key] = append(v, i)
-				} else {
-					out_data[key] = []bool{i}
-				}
-			case string:
-				if v, ok := out_data[key].([]string); ok {
-					out_data[key] = append(v, i)
-				} else {
-					out_data[key] = []string{i}
-				}
 			case primitive.DateTime:
 				if v, ok := out_data[key].([]time.Time); ok {
 					out_data[key] = append(v, i.Time())
 				} else {
 					out_data[key] = []time.Time{i.Time()}
 				}
-			case primitive.ObjectID:
-				if v, ok := out_data[key].([]string); ok {
-					out_data[key] = append(v, i.Hex())
-				} else {
-					out_data[key] = []string{i.Hex()}
-				}
-			case primitive.Binary:
-				// for uuid
-				u, e := uuid.FromBytes(i.Data)
-				if e != nil {
-					fmt.Print(e)
-					if v, ok := out_data[key].([]string); ok {
-						out_data[key] = append(v, "")
-					} else {
-						out_data[key] = []string{""}
-					}
-				} else {
-					if v, ok := out_data[key].([]string); ok {
-						out_data[key] = append(v, u.String())
-					} else {
-						out_data[key] = []string{u.String()}
-					}
-				}
-			// case primitive.M:
-			// 	i
-			// case primitive.A:
-			// 	String.valueOf(i)
-			// case primitive.Binary:
-			// for uuid
-
-			case nil:
-				fmt.Printf(" x is nil") // type of i is type of x (interface{})
+				continue
 			default:
-				fmt.Printf(" don't know the type ") // type of i is type of x (interface{})
-				// fmt.Println(i)
-				fmt.Println("%V %V %V", key, reflect.TypeOf(value), i)
+				data = purseAnyToString(i)
+			}
+
+			if v, ok := out_data[key].([]string); ok {
+				if length > len(v) {
+					padding_length := length - len(v)
+					for i := 0; i < padding_length; i++ {
+						v = append(v, "")
+					}
+				}
+				out_data[key] = append(v, data)
+			} else {
+				// Initial Padding
+				// If there is no value in the beginning but other keys have values
+				// then fill the current key value with a array of len and fill with 0
+				if length > 0 {
+					d := make([]string, length)
+					out_data[key] = append(d, data)
+				} else {
+					out_data[key] = []string{data}
+				}
 			}
 		}
-		len++
+		length++
 	}
 
 	// create data frame response.

@@ -56,7 +56,7 @@ func purseMapToString(value bson.M) string {
 	rval := "{"
 	for key, value := range value {
 		content := purseAnyToString(value)
-		rval += fmt.Sprintf(`"%s": %s,`, key, content)
+		rval += fmt.Sprintf(`"%s": "%s",`, key, content)
 	}
 	rval += "}"
 	return rval
@@ -65,7 +65,8 @@ func purseMapToString(value bson.M) string {
 func purseArrayToString(value bson.A) string {
 	rval := "["
 	for _, value := range value {
-		rval += purseAnyToString(value)
+		content := purseAnyToString(value)
+		rval += fmt.Sprintf(`"%s",`, content)
 	}
 	rval += "]"
 	return rval
