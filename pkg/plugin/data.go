@@ -64,10 +64,22 @@ func purseMapToString(value bson.M) string {
 
 func purseArrayToString(value bson.A) string {
 	rval := "["
-	for _, value := range value {
-		content := purseAnyToString(value)
-		rval += fmt.Sprintf(`"%s",`, content)
+	if len(value) == 0 {
+		rval += "]"
+		return rval
 	}
+	if len(value) == 1 {
+		content := purseAnyToString(value[0])
+		rval += fmt.Sprintf(`"%s"`, content)
+	} else {
+		for i := 0; i < len(value)-1; i++ {
+			content := purseAnyToString(value[i])
+			rval += fmt.Sprintf(`"%s",`, content)
+		}
+		content := purseAnyToString(value[len(value)-1])
+		rval += fmt.Sprintf(`"%s"`, content)
+	}
+
 	rval += "]"
 	return rval
 }
