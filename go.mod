@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/grafana/grafana-plugin-sdk-go v0.160.0
+	github.com/grafana/grafana-plugin-sdk-go v0.162.0
 	go.mongodb.org/mongo-driver v1.11.4
 )
 
