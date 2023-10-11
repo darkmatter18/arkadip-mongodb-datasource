@@ -42,7 +42,7 @@
     "jest-environment-jsdom": "^29.3.1",
     "prettier": "^3.0.0",
     "replace-in-file-webpack-plugin": "^1.0.6",
-    "sass": "1.67.0",
+    "sass": "1.69.2",
     "sass-loader": "13.3.2",
     "style-loader": "3.3.3",
     "swc-loader": "^0.2.3",
