@@ -3,7 +3,7 @@ module github.com/arkadip/mongodb-datasource
 go 1.19
 
 require (
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.4.0
 	github.com/grafana/grafana-plugin-sdk-go v0.187.0
 	go.mongodb.org/mongo-driver v1.12.1
 )
