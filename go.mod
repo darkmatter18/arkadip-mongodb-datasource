@@ -1,10 +1,12 @@
 module github.com/arkadip/mongodb-datasource
 
-go 1.19
+go 1.21
+
+toolchain go1.21.3
 
 require (
 	github.com/google/uuid v1.4.0
-	github.com/grafana/grafana-plugin-sdk-go v0.187.0
+	github.com/grafana/grafana-plugin-sdk-go v0.188.3
 	go.mongodb.org/mongo-driver v1.12.1
 )
 
