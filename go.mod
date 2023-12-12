@@ -5,7 +5,7 @@ go 1.21
 toolchain go1.21.3
 
 require (
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/grafana/grafana-plugin-sdk-go v0.193.0
 	go.mongodb.org/mongo-driver v1.12.1
 )
