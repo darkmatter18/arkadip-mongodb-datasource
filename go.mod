@@ -7,7 +7,7 @@ toolchain go1.21.3
 require (
 	github.com/google/uuid v1.6.0
 	github.com/grafana/grafana-plugin-sdk-go v0.224.0
-	go.mongodb.org/mongo-driver v1.14.0
+	go.mongodb.org/mongo-driver v1.15.0
 )
 
 require (
